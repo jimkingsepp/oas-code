@@ -1,0 +1,8 @@
+.DS_Store
+app/CodeGenerator/
+app/Console/Commands/GenerateCodeCommand.php
+/storage/CodeGenerator-templates
+/storage/*.json
+/tests/CodeGeneratorTest.php
+/tests/CommandTest.php
+/tests/ConnectionTest.php
