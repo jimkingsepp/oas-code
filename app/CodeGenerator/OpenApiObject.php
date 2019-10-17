@@ -4,8 +4,6 @@ namespace App\CodeGenerator;
 
 class OpenApiObject
 {
-	// private $required = [];
-
 	public function __construct(array $data)
 	{
 		array_walk($data, [$this, 'createMembers']);

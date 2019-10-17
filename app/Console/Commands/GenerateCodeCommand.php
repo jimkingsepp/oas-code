@@ -19,8 +19,8 @@ class GenerateCodeCommand extends Command
 	protected $signature = 'oas-code:generate {file=%s} {--%s} {--%s}';
 	protected $description = 'Generates code from OpenAPI spec';
 	private $options = [
-		self::MAKE_CLASSES => false,
-		self::MAKE_CONTROLLERS => false
+		self::MAKE_CLASSES => true,
+		self::MAKE_CONTROLLERS => true
 	];
 
 	public function __construct()
@@ -68,7 +68,6 @@ class GenerateCodeCommand extends Command
 
 				return true;
 			}, [$endpoints, $generator]);
-
 		} catch (\Exception $e) {
 			$this->info($e->getMessage());
 		}
@@ -81,10 +80,17 @@ class GenerateCodeCommand extends Command
 
 	private function readOptions() : void
 	{
-		// check the 'controllers' option (create controllers only)
 		array_walk($this->options, function ($item, $key) {
 			$this->options[$key] = $this->option($key);
 		});
+
+        // if all option values are false, the default option is to make all components
+		if (in_array(true, $this->options, $strict = true) === false) {
+			// all option values are false
+			array_walk($this->options, function ($item, $key) {
+				$this->options[$key] = true;
+			});
+		}
 
 		array_walk($this->options, function ($item, $key) {
 			if ($this->options[$key]) {

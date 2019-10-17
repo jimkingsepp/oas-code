@@ -52,7 +52,7 @@ class CodeGeneratorTest extends TestCase
 
 			return true;
 		}, [$endpoints, &$operationIds]);
-		if ($spec->getVersionType() === VersionType::OpenAPI) {
+		if ($spec->isOpenAPISpec()) {
 			$this->assertCount(6, $operationIds, 'Counting operationIds');
 			$this->assertSame(
 				[
@@ -123,13 +123,7 @@ class CodeGeneratorTest extends TestCase
 	{
 		$this->assertNotNull($spec);
 		$schemas = $spec->getSchemas();
-		if ($spec->getVersionType() === VersionType::OpenAPI) {
-			$this->assertNotNull($schemas);
-		} else {
-			$this->assertNull($schemas);
-
-			return null;
-		}
+		$this->assertNotNull($schemas);
 
 		$schema_names = [];
 		iterator_apply($schemas, function ($schemas, &$schema_names) {
@@ -137,10 +131,9 @@ class CodeGeneratorTest extends TestCase
 
 			return true;
 		}, [$schemas, &$schema_names]);
-		$this->assertCount(19, $schema_names, 'Counting schema_names');
-
-		$this->assertSame(
-			[
+		if ($spec->isOpenAPISpec()) {
+			$count = 19;
+			$schema_list = [
 				'DeliveryItem',
 				'Customer',
 				'DropoffAddress',
@@ -160,9 +153,21 @@ class CodeGeneratorTest extends TestCase
 				'DuplicateDeliveryError',
 				'Dasher',
 				'Location'
-			],
-			$schema_names
-		);
+			];
+		} else {
+			$count = 6;
+			$schema_list = [
+				'Category',
+				'Pet',
+				'Tag',
+				'ApiResponse',
+				'Order',
+				'User'
+			];
+		}
+		$this->assertCount($count, $schema_names, 'Counting schema_names');
+		$this->assertNotEmpty($schema_list);
+		$this->assertSame($schema_list, $schema_names);
 
 		return $schemas;
 	}

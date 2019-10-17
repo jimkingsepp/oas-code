@@ -26,23 +26,40 @@ class OpenApiSpec
 		// info object
 		$this->info = new OpenApiObject((array)$spec_data->info);
 		// server -or- hosts object
-		if ($this->version_type === VersionType::OpenAPI) {
-			$this->servers = isset($spec_data->servers) ? new OpenApiObject((array)$spec_data->servers) : ['/'];
-		} else {
-            $base_path = $spec_data->basePath ?? '/';
-            if(isset($spec_data->host)) {
-                $this->servers = [$spec_data->host . $base_path];
-            } else {
-                $this->servers = [$base_path];
-            }
-        }
+		$this->servers = $this->buildServerCollection($spec_data);
 		// tags object
 		$this->tags = new OpenApiObject((array)$spec_data->tags);
 		// endpoints
 		$this->endpoint_collection = $this->buildEndpointCollection((array)$spec_data->paths);
-        // components/schemas -or- definitions
-        $schema_data = $spec_data->components->schemas ?? ($spec_data->definitions ?? null);
-        $this->schema_collection = $schema_data ? $this->buildSchemaCollection((array)$schema_data) : null;
+		// components/schemas -or- definitions
+		$schema_data = $spec_data->components->schemas ?? ($spec_data->definitions ?? null);
+		$this->schema_collection = $schema_data ? $this->buildSchemaCollection((array)$schema_data) : null;
+	}
+
+	private function buildServerCollection(\stdClass $spec_data) : Collection
+	{
+		$collection = new Collection;
+		if ($this->version_type === VersionType::OpenAPI) {
+			array_walk($spec_data->servers, function ($value, $key) {
+				$server = new Server;
+				$server->setUrl($value->url)
+							->setDescription($value->description)
+							->setVariables($value->variables);
+				$collection->add($server);
+			});
+		} else {
+			$base_path = $spec_data->basePath ?? '/';
+			if (isset($spec_data->host)) {
+				$url = $spec_data->host . $base_path;
+			} else {
+				$url = $base_path;
+			}
+			$server = new Server;
+			$server->setUrl($url);
+			$collection->add($server);
+		}
+
+		return $collection;
 	}
 
 	private function buildEndpointCollection(array $endpoint_data) : Collection
@@ -69,9 +86,9 @@ class OpenApiSpec
 		return $collection;
 	}
 
-	public function getVersionType() : string
+	public function isOpenAPISpec() : string
 	{
-		return $this->version_type;
+		return $this->version_type === VersionType::OpenAPI;
 	}
 
 	public function getInfo() : object
@@ -79,9 +96,9 @@ class OpenApiSpec
 		return $this->info;
 	}
 
-	public function getServers() : array
+	public function getServers() : Collection
 	{
-		return ($this->servers !== '/') ? $this->servers->toArray() : ['/'];
+		return $this->servers;
 	}
 
 	public function getEndpoints() : Collection
