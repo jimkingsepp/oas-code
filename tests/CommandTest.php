@@ -4,6 +4,7 @@
 
 use Illuminate\Console\Parser;
 use App\Console\Commands\GenerateCodeCommand;
+use App\Console\Commands\CodeGeneratorOptions;
 
 class CommandTest extends TestCase
 {
@@ -40,12 +41,23 @@ class CommandTest extends TestCase
 
 	public function testGenerateWithControllerOption()
 	{
-        $cmd = 'oas-code:generate';
-        $option = GenerateCodeCommand::MAKE_CONTROLLERS;
+		$cmd = 'oas-code:generate';
+		$option = CodeGeneratorOptions::MAKE_CONTROLLERS;
 		$results = Parser::parse($cmd . " {--$option}");
-        // var_dump($results); exit;
-        $this->assertEquals($cmd, $results[0]);
-        $this->assertEmpty($results[1]); // arguments
+		$this->assertEquals($cmd, $results[0]);
+		$this->assertEmpty($results[1]); // arguments
         $this->assertEquals($option, $results[2][0]->getName());
+        $this->assertFalse($results[2][0]->acceptValue());
+	}
+
+	public function testGenerateWithClassesOption()
+	{
+        $cmd = 'oas-code:generate';
+		$option = CodeGeneratorOptions::MAKE_CLASSES;
+		$results = Parser::parse($cmd . " {--$option}");
+		$this->assertEquals($cmd, $results[0]);
+		$this->assertEmpty($results[1]); // arguments
+		$this->assertEquals($option, $results[2][0]->getName());
+        $this->assertFalse($results[2][0]->acceptValue());
 	}
 }
