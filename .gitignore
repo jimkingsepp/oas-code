@@ -1,4 +1,2 @@
 .gitignore
 .DS_Store
-/storage/doordashdrive.json
-.phpunit.result.cache
