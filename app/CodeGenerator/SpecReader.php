@@ -2,6 +2,8 @@
 
 namespace App\CodeGenerator;
 
+use Symfony\Component\Yaml\Yaml;
+
 class SpecReader
 {
 	public static function getSpecData($path)
@@ -9,9 +11,11 @@ class SpecReader
 		$extension = pathinfo($path, PATHINFO_EXTENSION);
 		if ($extension === 'json') {
 			$json = file_get_contents($path);
-			$spec_data = json_decode($json);
-		} else {    //  TODO: code for yml files
-			$spec_data = null;
+			$spec_data = json_decode($json, JSON_OBJECT_AS_ARRAY);
+		} elseif ($extension === 'yml' || $extension === 'yaml') {
+			$spec_data = Yaml::parseFile($path);
+		} else {
+			throw new \Exception('No OpenAPI specification found.');
 		}
 
 		return $spec_data;

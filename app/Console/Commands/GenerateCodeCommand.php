@@ -7,12 +7,15 @@ use App\CodeGenerator\OpenApiSpec;
 use App\CodeGenerator\ControllerGenerator;
 use Illuminate\Console\Command;
 
-// use App\Console\Commands\GenerateCodeCommand;
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 class GenerateCodeCommand extends Command
 {
 	// const DEFAULT_FILE = 'doordashdrive.json';
-	const DEFAULT_FILE = 'petstore.json';
+	// const DEFAULT_FILE = 'petstore.json';
+	const DEFAULT_FILE = 'petstore.yml';
 
 	protected $signature = 'oas-code:generate {file=%s}';
 	protected $description = 'Generates code from OpenAPI spec';
@@ -49,7 +52,7 @@ class GenerateCodeCommand extends Command
 				$this->makeController($spec);
 			}
 			if ($options->wantsClasses()) {
-				$this->info("Making classes");
+				$this->info('Making classes');
 			}
 		} catch (\Exception $e) {
 			$this->info($e->getMessage());
@@ -58,30 +61,30 @@ class GenerateCodeCommand extends Command
 
 	private function makeController(OpenAPISpec $spec) : void
 	{
-		// create controllers from endpoints
+		// create controllers from paths
 		$controller_name = $this->createControllerName($spec->getInfo()->title);
 		$this->info("\nCreating '$controller_name'.\n");
 		$generator = new ControllerGenerator($controller_name);
 
-		$endpoints = $spec->getEndpoints();
-		iterator_apply($endpoints, function ($endpoints, $generator) {
-			$this->info("\tCreating '{$endpoints->current()->getOperationId()}' method.");
-			$generator->addMethod($endpoints->current()->getOperationId());
+		$paths = $spec->getPaths();
+		iterator_apply($paths, function ($paths, $generator) {
+			$this->info("\tCreating '{$paths->current()->getOperationId()}' method.");
+			$generator->addMethod($paths->current()->getOperationId());
 
 			$this->info("\tUpdating routes.\n");
 			$generator->updateRoutes(
-						$endpoints->current()->getPath(),
-						$endpoints->current()->getMethod(),
-						$endpoints->current()->getOperationId()
-					);
+				$paths->current()->getPath(),
+				$paths->current()->getOperation(),
+				$paths->current()->getOperationId()
+			);
 
 			return true;
-		}, [$endpoints, $generator]);
+		}, [$paths, $generator]);
 	}
 
 	public static function createControllerName($title)
 	{
-		return \str_replace(' ', '', $title) . 'Controller';
+		return \str_replace(' ', '', ucwords($title)) . 'Controller';
 	}
 }
 
@@ -124,17 +127,17 @@ class CodeGeneratorOptions
 				return true;
 			}, $this->options);
 		}
-    }
+	}
 
-    public function wantsController() : bool
-    {
-        return $this->options[self::MAKE_CONTROLLERS];
-    }
+	public function wantsController() : bool
+	{
+		return $this->options[self::MAKE_CONTROLLERS];
+	}
 
-    public function wantsClasses() : bool
-    {
-        return $this->options[self::MAKE_CLASSES];
-    }
+	public function wantsClasses() : bool
+	{
+		return $this->options[self::MAKE_CLASSES];
+	}
 
 	public static function addOptionsToSignature(string &$signature) : void
 	{

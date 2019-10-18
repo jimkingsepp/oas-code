@@ -3,12 +3,12 @@
 use Illuminate\Container\Container;
 use App\CodeGenerator\SpecReader;
 use App\CodeGenerator\OpenApiSpec;
-use App\CodeGenerator\Endpoint;
+use App\CodeGenerator\PathItem;
 use App\Console\Commands\GenerateCodeCommand;
 
 class ConnectionTest extends TestCase
 {
-	public function testReadSpecFromFile() : \stdClass
+	public function testReadSpecFromFile() : array
 	{
 		$path = storage_path(GenerateCodeCommand::DEFAULT_FILE);
 		$this->assertFileExists(realpath($path));
@@ -21,7 +21,7 @@ class ConnectionTest extends TestCase
 	/**
 	 * @depends testReadSpecFromFile
 	 */
-	public function testCreateSpecObjectFromFileData(\stdClass $spec_data) : OpenApiSpec
+	public function testCreateSpecObjectFromFileData(array $spec_data) : OpenApiSpec
 	{
 		$spec = new OpenApiSpec($spec_data);
 		$this->assertNotNull($spec);
@@ -33,27 +33,27 @@ class ConnectionTest extends TestCase
 
 	/**
 	 * @testdox Connect to POST Endpoints
-     *
-     * @depends testCreateSpecObjectFromFileData
+	 *
+	 * @depends testCreateSpecObjectFromFileData
 	 */
 	public function testConnectToPOSTEndpoints(OpenApiSpec $spec) : void
 	{
 		$this->assertNotNull($spec);
-		$endpoints = $spec->getEndpoints();
-		$this->assertNotNull($endpoints);
+		$paths = $spec->getPaths();
+		$this->assertNotNull($paths);
 
-		iterator_apply($endpoints, function ($endpoints) {
-			if ($endpoints->current()->getMethod() === 'POST') {
-				$response = $this->sendEndpoint($endpoints->current());
-				$operationId = $endpoints->current()->getOperationId();
+		iterator_apply($paths, function ($paths) {
+			if ($paths->current()->getOperation() === 'POST') {
+				$response = $this->sendEndpoint($paths->current());
+				$operationId = $paths->current()->getOperationId();
 				$this->assertEquals("You have successfully connected to the $operationId endpoint", $response);
 			}
 
 			return true;
-		}, [$endpoints]);
+		}, [$paths]);
 	}
 
-	private function sendEndpoint(Endpoint $e) : string
+	private function sendEndpoint(PathItem $e) : string
 	{
 		// set URL and other appropriate options
 		$curl = curl_init();
@@ -66,7 +66,7 @@ class ConnectionTest extends TestCase
 			CURLOPT_MAXREDIRS => 10,
 			CURLOPT_TIMEOUT => 30,
 			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => $e->getMethod(),
+			CURLOPT_CUSTOMREQUEST => $e->getOperation(),
 			CURLOPT_POSTFIELDS => ''
 		]);
 

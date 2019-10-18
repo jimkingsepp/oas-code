@@ -3,19 +3,23 @@
 namespace App\CodeGenerator;
 
 use App\CodeGenerator\Collection;
-use App\CodeGenerator\Schema;
+use App\CodeGenerator\Components;
 
 class OpenApiSpec
 {
 	private $version_type; // 'swagger' or 'openapi'
 	private $version;
 	private $info;
-	private $servers;
+	private $servers;       // collection object
+	private $paths;         // collection object
+	private $components;
 	private $tags;
-	private $endpoint_collection;
-	private $schema_collection;
 
-	public function __construct($spec_data)
+	/** no support for these Open API 3.0 elements
+	 *      security
+	 *      externalDocs
+	 */
+	public function __construct(array $spec_data)
 	{
 		// OpenAPI versioning
 		reset($spec_data);
@@ -23,28 +27,36 @@ class OpenApiSpec
 		if (VersionType::isValidValue($this->version_type) === false) {
 			throw new \Exception('OpenAPI specification version is required.');
 		}
+		if ($this->isOpenAPISpec() === false) {
+			throw new \Exception('No support for version 2.0 yet.');
+		}
 		// info object
-		$this->info = new OpenApiObject((array)$spec_data->info);
-		// server -or- hosts object
-		$this->servers = $this->buildServerCollection($spec_data);
+		$this->info = new OpenApiObject($spec_data['info']);
+		// server collection
+		$this->servers = $this->buildServers($spec_data);
+		// paths collection
+		$this->paths = $this->buildPaths($spec_data['paths']);
+		// components
+		$this->components = new Components($spec_data['components']);
 		// tags object
-		$this->tags = new OpenApiObject((array)$spec_data->tags);
-		// endpoints
-		$this->endpoint_collection = $this->buildEndpointCollection((array)$spec_data->paths);
-		// components/schemas -or- definitions
-		$schema_data = $spec_data->components->schemas ?? ($spec_data->definitions ?? null);
-		$this->schema_collection = $schema_data ? $this->buildSchemaCollection((array)$schema_data) : null;
+		if (isset($spec_data['tags'])) {
+			$this->tags = new OpenApiObject($spec_data['tags']);
+		}
 	}
 
-	private function buildServerCollection(\stdClass $spec_data) : Collection
+	private function buildServers(array $spec_data) : Collection
 	{
 		$collection = new Collection;
 		if ($this->version_type === VersionType::OpenAPI) {
-			array_walk($spec_data->servers, function ($value, $key) {
+			array_walk($spec_data['servers'], function ($value, $key) use ($collection) {
 				$server = new Server;
-				$server->setUrl($value->url)
-							->setDescription($value->description)
-							->setVariables($value->variables);
+				$server->setUrl($value['url']);
+				if (isset($value['description'])) {
+					$server->setDescription($value['description']);
+				}
+				if (isset($value['variables'])) {
+					$server->setVariables($value['variables']);
+				}
 				$collection->add($server);
 			});
 		} else {
@@ -62,25 +74,15 @@ class OpenApiSpec
 		return $collection;
 	}
 
-	private function buildEndpointCollection(array $endpoint_data) : Collection
+	private function buildPaths(array $path_data) : Collection
 	{
 		$collection = new Collection;
 		// split the data by path
-		array_walk($endpoint_data, function ($path_data, $path) use ($collection) {
-			// and then by method -- endpoints may share the same path but have different method
-			array_walk($path_data, function ($value, $method) use ($path, $collection) {
-				$collection->add(new Endpoint($path, $method, $value));
+		array_walk($path_data, function ($data, $path) use ($collection) {
+			// and then by method -- path item may share the same path but have different method
+			array_walk($data, function ($value, $method) use ($path, $collection) {
+				$collection->add(new PathItem($path, $method, $value));
 			});
-		});
-
-		return $collection;
-	}
-
-	private function buildSchemaCollection(array $schema_data) : Collection
-	{
-		$collection = new Collection;
-		array_walk($schema_data, function ($schema_data, $name) use ($collection) {
-			$collection->add(new Schema($schema_data, $name));
 		});
 
 		return $collection;
@@ -101,14 +103,14 @@ class OpenApiSpec
 		return $this->servers;
 	}
 
-	public function getEndpoints() : Collection
+	public function getPaths() : Collection
 	{
-		return $this->endpoint_collection;
+		return $this->paths;
 	}
 
-	public function getSchemas() : ?Collection
+	public function getComponents() : Components
 	{
-		return $this->schema_collection;
+		return $this->components;
 	}
 }
 
