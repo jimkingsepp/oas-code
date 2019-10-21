@@ -30,4 +30,12 @@ class Components
 	//         'properties' => $this->property_collection->toArray()
 	//     ];
 	// }
+
+	/**
+	 * Get the value of schemas
+	 */
+	public function getSchemas()
+	{
+		return $this->schemas;
+	}
 }

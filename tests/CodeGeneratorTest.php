@@ -117,44 +117,23 @@ class CodeGeneratorTest extends TestCase
 	/**
 	 * @depends testCreateSpecObjectFromFileData
 	 */
-	public function testCreateComponentsFromSpecObject(OpenApiSpec $spec) : ?Collection
+	public function testCreateSchemasFromSpecObject(OpenApiSpec $spec) : ?array
 	{
 		$this->assertNotNull($spec);
-		$components = $spec->getComponents();
-		$this->assertNotNull($components);
+		$schemas = $spec->getComponents()->getSchemas();
+		$this->assertNotNull($schemas);
 
-		$component_names = [];
-		iterator_apply($components, function ($components, &$component_names) {
-			$component_names[] = $components->current()->getName();
-
-			return true;
-		}, [$components, &$component_names]);
+		$schema_names = array_keys($schemas);
 		if ($spec->isOpenAPISpec()) {
-			$count = 19;
-			$component_list = [
-				'DeliveryItem',
-				'Customer',
-				'DropoffAddress',
-				'DropoffAddressResponse',
-				'PickupAddress',
-				'CreationPickupAddress',
-				'PickupAddressResponse',
-				'DeliveryEstimate',
-				'Address',
-				'DeliveryValidationResponse',
-				'ValidDeliveryResponse',
-				'DeliveryResponse',
-				'DeliveryCancelResponse',
-				'ValidationResponse',
-				'FieldError',
-				'Item',
-				'DuplicateDeliveryError',
-				'Dasher',
-				'Location'
+			$count = 3;
+			$schema_list = [
+                'Pet',
+                'NewPet',
+                'Error'
 			];
 		} else {
 			$count = 6;
-			$component_list = [
+			$schema_list = [
 				'Category',
 				'Pet',
 				'Tag',
@@ -163,11 +142,11 @@ class CodeGeneratorTest extends TestCase
 				'User'
 			];
 		}
-		$this->assertCount($count, $component_names, 'Counting component_names');
-		$this->assertNotEmpty($component_list);
-		$this->assertSame($component_list, $component_names);
+		$this->assertCount($count, $schema_names, 'Counting schema_names');
+		$this->assertNotEmpty($schema_list);
+		$this->assertSame($schema_list, $schema_names);
 
-		return $components;
+		return $schemas;
 	}
 
 	/**
