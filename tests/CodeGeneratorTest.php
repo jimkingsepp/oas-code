@@ -77,7 +77,7 @@ class CodeGeneratorTest extends TestCase
 	{
 		$this->markTestSkipped('No test for creating body of endpoint request');
 		$request_body_valid = 0;
-		$request_body_null = 0;
+		$request_body_null  = 0;
 		iterator_apply($paths, function ($paths, &$request_body_valid, &$request_body_null) {
 			$request_body_data = $paths->current()->getRequestBodyData();
 			if (!empty($request_body_data)) {
@@ -117,22 +117,27 @@ class CodeGeneratorTest extends TestCase
 	/**
 	 * @depends testCreateSpecObjectFromFileData
 	 */
-	public function testCreateSchemasFromSpecObject(OpenApiSpec $spec) : ?array
+	public function testCreateSchemasFromSpecObject(OpenApiSpec $spec) : ?Collection
 	{
 		$this->assertNotNull($spec);
 		$schemas = $spec->getComponents()->getSchemas();
 		$this->assertNotNull($schemas);
+		$schema_names = [];
+		iterator_apply($schemas, function ($schemas) use (&$schema_names) {
+			$schema_names[] = $schemas->current()->getName();
 
-		$schema_names = array_keys($schemas);
+			return true;
+		}, [$schemas]);
+
 		if ($spec->isOpenAPISpec()) {
-			$count = 3;
+			$count       = 3;
 			$schema_list = [
-                'Pet',
-                'NewPet',
-                'Error'
+				'Pet',
+				'NewPet',
+				'Error'
 			];
 		} else {
-			$count = 6;
+			$count       = 6;
 			$schema_list = [
 				'Category',
 				'Pet',
@@ -170,7 +175,7 @@ class CodeGeneratorTest extends TestCase
 	 */
 	public function testCreateControllerMethods(ControllerGenerator $generator, Collection $paths) : void
 	{
-		$route_file = base_path() . '/routes/web.php';
+		$route_file     = base_path() . '/routes/web.php';
 		$route_contents = file_get_contents($route_file);
 		// create controller & update routes in web.php
 		iterator_apply($paths, function ($paths, $generator) {
@@ -201,19 +206,19 @@ class CodeGeneratorTest extends TestCase
 		$curl = curl_init();
 		$this->assertNotNull($curl);
 		curl_setopt_array($curl, [
-			CURLOPT_PORT => '81',
-			CURLOPT_URL => 'http://localhost:81/' . $e->getPath(),
+			CURLOPT_PORT           => '81',
+			CURLOPT_URL            => 'http://localhost:81/' . $e->getPath(),
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_ENCODING => '',
-			CURLOPT_MAXREDIRS => 10,
-			CURLOPT_TIMEOUT => 30,
-			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => $e->getOperation(),
-			CURLOPT_POSTFIELDS => ''
+			CURLOPT_ENCODING       => '',
+			CURLOPT_MAXREDIRS      => 10,
+			CURLOPT_TIMEOUT        => 30,
+			CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST  => $e->getOperation(),
+			CURLOPT_POSTFIELDS     => ''
 		]);
 
 		$response = curl_exec($curl);
-		$err = curl_error($curl);
+		$err      = curl_error($curl);
 		curl_close($curl);
 
 		return $response;

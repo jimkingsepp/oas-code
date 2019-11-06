@@ -2,40 +2,109 @@
 
 namespace App\CodeGenerator;
 
+use App\CodeGenerator\Collection;
+
 class Components
 {
 	private $schemas;
-	private $responses;
-	private $parameters;
-	private $examples;
-	private $requestBodies;
-	private $headers;
-	private $securitySchemes;
-	private $links;
-	private $callbacks;
+	/** TODO */
+	// private $responses;
+	// private $parameters;
+	// private $examples;
+	// private $requestBodies;
+	// private $headers;
+	// private $securitySchemes;
+	// private $links;
+	// private $callbacks;
 
-	public function __construct(array $data)
+	public function __construct(array $component_data)
 	{
-		$member_variables = array_keys(get_object_vars($this));
-		array_map(function ($value) use ($data) {
-			if (isset($data[$value])) {
-				$this->$value = $data[$value];
-			}
-		}, $member_variables);
+		// var_dump($component_data['schemas']); exit;
+		if (isset($component_data['schemas'])) {
+			$this->schemas = new Collection;
+			array_walk($component_data['schemas'], function ($value, $key) {
+				$this->schemas->add(new Schema($value, $key));
+			});
+		}
 	}
 
-	// public function toArray() : array
-	// {
-	//     return [
-	//         'properties' => $this->property_collection->toArray()
-	//     ];
-	// }
-
 	/**
-	 * Get the value of schemas
+	 * Get the value of schemas.
 	 */
-	public function getSchemas()
+	public function getSchemas() : Collection
 	{
 		return $this->schemas;
+	}
+
+	public function getSchemaProperties(string $schema) : array
+	{
+		$properties = [];
+
+		$schema = $this->schemas->{$schema};
+		if (isset($schema['allOf'])) {
+			$properties = $schema['allOf']['properties'];
+			$ref        = $schema['allOf']['$ref'];
+			array_push($properties, str_replace('#/components/schemas/', '', $ref));
+			array_merge($properties, $this->getSchemaProperties($allOf_schema));
+		}
+		$properties = $schema['properties'];
+
+		return $properties;
+	}
+}
+
+class Schema implements Collectable
+{
+	private $name;
+	private $type;
+	private $required;
+	private $properties;
+	private $schemas = [];
+
+	public function __construct(array $schema_data, string $name)
+	{
+		$this->name = $name;
+		if (array_key_first($schema_data) === 'allOf') {
+			array_walk($schema_data['allOf'], function ($item, $key) {
+				if (in_array('$ref', array_keys($item))) {
+					$this->schemas[] = $item['$ref'];
+				} else {
+					$this->setMemberVariables($item);
+				}
+			});
+		} else {
+			$this->setMemberVariables($schema_data);
+		}
+	}
+
+	private function setMemberVariables($data)
+	{
+		$this->type       = $data['type'];
+		$this->required   = $data['required'];
+		$this->properties = new Collection;
+		array_walk($data['properties'], function ($value, $key) {
+			$property = new Property($value, $key);
+			$this->properties->add($property);
+		});
+	}
+
+	public function getName() : string
+	{
+		return $this->name;
+	}
+
+	public function getProperties() : Collection
+	{
+		return $this->properties;
+	}
+
+	public function toArray() : array
+	{
+		$schema_array = ['name' => $this->name];
+		iterator_apply($this->properties, function () {
+			array_push($schema_array, $this->properties->toArray());
+		}, [$this->properties, $schema_array]);
+
+		return $schema_array;
 	}
 }

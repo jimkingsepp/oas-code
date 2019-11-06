@@ -52,7 +52,7 @@ class GenerateCodeCommand extends Command
 				$this->makeController($spec);
 			}
 			if ($options->wantsClasses()) {
-				$this->info('Making classes');
+				$this->makeClasses($spec->getComponents()->getSchemas(), $spec->getInfo()->title);
 			}
 		} catch (\Exception $e) {
 			$this->info($e->getMessage());
@@ -62,7 +62,7 @@ class GenerateCodeCommand extends Command
 	private function makeController(OpenAPISpec $spec) : void
 	{
 		// create controllers from paths
-		$controller_name = $this->createControllerName($spec->getInfo()->title);
+		$controller_name = $this->createControllerName($this->title);
 		$this->info("\nCreating '$controller_name'.\n");
 		$generator = new ControllerGenerator($controller_name);
 
@@ -82,9 +82,36 @@ class GenerateCodeCommand extends Command
 		}, [$paths, $generator]);
 	}
 
+	private function makeClasses(Collection $schemas, string $title)
+	{
+		$this->info('Making classes');
+		// make directory for these new class files
+		$namespace = $this->createNamespace($title);
+		if (file_exists($namespace) === false) {
+			mkdir($namespace);
+		}
+
+		iterator_apply($schemas, function ($schemas) use ($namespace) {
+            $current_schema = $schemas->current();
+			// create class files
+			$path = $namespace . '/' . array_key_first($current_schema) . '.php';
+			if (file_exists($path) === false) {
+				fopen($path, 'w');
+			}
+			// $properties =* $this->getComponents()->getSchemaProperties($item);
+			echo json_encode($$current_schema->toArray(), JSON_PRETTY_PRINT);
+			exit;
+		}, [$schemas]);
+	}
+
 	public static function createControllerName($title)
 	{
 		return \str_replace(' ', '', ucwords($title)) . 'Controller';
+	}
+
+	private function createNamespace($title)
+	{
+		return 'app/' . str_replace(' ', '', $title);
 	}
 }
 
