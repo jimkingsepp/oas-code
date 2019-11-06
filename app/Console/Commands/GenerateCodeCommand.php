@@ -14,7 +14,6 @@ error_reporting(E_ALL);
 
 class GenerateCodeCommand extends Command
 {
-	// const DEFAULT_FILE = 'doordashdrive.json';
 	// const DEFAULT_FILE = 'petstore.json';
 	const DEFAULT_FILE = 'petstore.yml';
 
@@ -72,7 +71,7 @@ class GenerateCodeCommand extends Command
 			$this->info("\tCreating '{$paths->current()->getOperationId()}' method.");
 			$generator->addMethod($paths->current()->getOperationId());
 
-			$this->info("\tUpdating routes.\n");
+			$this->info("\tUpdating route.\n");
 			$generator->updateRoutes(
 				$paths->current()->getPath(),
 				$paths->current()->getOperation(),
@@ -98,8 +97,10 @@ class GenerateCodeCommand extends Command
 			$path = $namespace . '/' . $current_schema->getName() . '.php';
 			if (file_exists($path) === false) {
 				fopen($path, 'w');
-			}
-			echo json_encode($current_schema->toArray(), JSON_PRETTY_PRINT);
+            }
+
+            $current_schema->makeClass($path);
+
 			exit;
 		}, [$schemas]);
 	}

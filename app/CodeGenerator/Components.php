@@ -91,7 +91,12 @@ class Schema implements Collectable
 	public function getName() : string
 	{
 		return $this->name;
-	}
+    }
+
+    public function makeClass(string $file) : void
+    {
+        echo json_encode($this->toArray(), JSON_PRETTY_PRINT) . "\n";
+    }
 
 	public function getProperties() : Collection
 	{
