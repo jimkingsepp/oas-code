@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\CodeGenerator\SpecReader;
 use App\CodeGenerator\OpenApiSpec;
 use App\CodeGenerator\ControllerGenerator;
+use App\CodeGenerator\Collection;
 use Illuminate\Console\Command;
 
 ini_set('display_errors', 1);
@@ -52,7 +53,7 @@ class GenerateCodeCommand extends Command
 				$this->makeController($spec);
 			}
 			if ($options->wantsClasses()) {
-				$this->makeClasses($spec->getComponents()->getSchemas(), $spec->getInfo()->title);
+				$this->makeClasses($spec->getComponents()->getSchemas(), $spec->getInfo()->getValue('title'));
 			}
 		} catch (\Exception $e) {
 			$this->info($e->getMessage());
@@ -62,7 +63,7 @@ class GenerateCodeCommand extends Command
 	private function makeController(OpenAPISpec $spec) : void
 	{
 		// create controllers from paths
-		$controller_name = $this->createControllerName($this->title);
+		$controller_name = $this->createControllerName($spec->getInfo()->getValue('title'));
 		$this->info("\nCreating '$controller_name'.\n");
 		$generator = new ControllerGenerator($controller_name);
 
@@ -94,12 +95,11 @@ class GenerateCodeCommand extends Command
 		iterator_apply($schemas, function ($schemas) use ($namespace) {
             $current_schema = $schemas->current();
 			// create class files
-			$path = $namespace . '/' . array_key_first($current_schema) . '.php';
+			$path = $namespace . '/' . $current_schema->getName() . '.php';
 			if (file_exists($path) === false) {
 				fopen($path, 'w');
 			}
-			// $properties =* $this->getComponents()->getSchemaProperties($item);
-			echo json_encode($$current_schema->toArray(), JSON_PRETTY_PRINT);
+			echo json_encode($current_schema->toArray(), JSON_PRETTY_PRINT);
 			exit;
 		}, [$schemas]);
 	}

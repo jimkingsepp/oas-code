@@ -25,10 +25,15 @@ class OpenApiObject
 				$this->$key = $value;
 			}
 		}
-    }
+	}
 
-    public function toArray() : array
-    {
-        return get_object_vars($this);
-    }
+	public function getValue(string $name)
+	{
+		return $this->{$name};
+	}
+
+	public function toArray() : array
+	{
+		return get_object_vars($this);
+	}
 }

@@ -101,9 +101,9 @@ class Schema implements Collectable
 	public function toArray() : array
 	{
 		$schema_array = ['name' => $this->name];
-		iterator_apply($this->properties, function () {
+		iterator_apply($this->properties, function () use (&$schema_array) {
 			array_push($schema_array, $this->properties->toArray());
-		}, [$this->properties, $schema_array]);
+		}, [$this->properties, &$schema_array]);
 
 		return $schema_array;
 	}
