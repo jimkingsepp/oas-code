@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\CodeGenerator\SpecReader;
 use App\CodeGenerator\OpenApiSpec;
 use App\CodeGenerator\ControllerGenerator;
+use App\CodeGenerator\ClassesGenerator;
 use App\CodeGenerator\Collection;
 use Illuminate\Console\Command;
 
@@ -17,7 +18,7 @@ class GenerateCodeCommand extends Command
 	// const DEFAULT_FILE = 'petstore.json';
 	const DEFAULT_FILE = 'petstore.yml';
 
-	protected $signature = 'oas-code:generate {file=%s}';
+	protected $signature   = 'oas-code:generate {file=%s}';
 	protected $description = 'Generates code from OpenAPI spec';
 
 	public function __construct()
@@ -87,21 +88,16 @@ class GenerateCodeCommand extends Command
 		$this->info('Making classes');
 		// make directory for these new class files
 		$namespace = $this->createNamespace($title);
-		if (file_exists($namespace) === false) {
-			mkdir($namespace);
+		if (file_exists("app/$namespace") === false) {
+			mkdir("app/$namespace");
 		}
 
 		iterator_apply($schemas, function ($schemas) use ($namespace) {
-            $current_schema = $schemas->current();
-			// create class files
-			$path = $namespace . '/' . $current_schema->getName() . '.php';
-			if (file_exists($path) === false) {
-				fopen($path, 'w');
-            }
+			$current_schema = $schemas->current();
+			$this->info("\tCreating " . $current_schema->getName() . '.php');
+            new ClassesGenerator($namespace, $current_schema);
 
-            $current_schema->makeClass($path);
-
-			exit;
+            return true;
 		}, [$schemas]);
 	}
 
@@ -112,16 +108,16 @@ class GenerateCodeCommand extends Command
 
 	private function createNamespace($title)
 	{
-		return 'app/' . str_replace(' ', '', $title);
+		return str_replace(' ', '', $title);
 	}
 }
 
 class CodeGeneratorOptions
 {
 	const MAKE_CONTROLLERS = 'controller';
-	const MAKE_CLASSES = 'classes';
-	const OPTIONS = [
-		self::MAKE_CLASSES => true,
+	const MAKE_CLASSES     = 'classes';
+	const OPTIONS          = [
+		self::MAKE_CLASSES     => true,
 		self::MAKE_CONTROLLERS => true
 	];
 

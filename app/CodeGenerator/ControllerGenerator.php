@@ -2,12 +2,10 @@
 
 namespace App\CodeGenerator;
 
-class ControllerGenerator
-{
-	const template_directory = '/CodeGenerator-templates/';
-	const controller_template_name = 'ControllerTemplate.tmpl';
-	const method_template_name = 'MethodTemplate.tmpl';
+use App\CodeGenerator\CodeTemplate;
 
+class ControllerGenerator extends CodeTemplate
+{
 	private $controller_name;
 
 	public function __construct(string $controller_name)
@@ -19,7 +17,7 @@ class ControllerGenerator
 			// get controller template
 			$controller_content = file_get_contents($this->getTemplatePath() . self::controller_template_name);
 			// insert class name
-			$controller_content = str_replace('[class_name]', $controller_name, $controller_content);
+			$controller_content = str_replace('{{class_name}}', $controller_name, $controller_content);
 			// write to new controller
 			file_put_contents($this->controller_path, $controller_content);
 		}
@@ -38,7 +36,7 @@ class ControllerGenerator
 		// if the method is already in the controller, don't add it again
 		if (strpos($new_content, $method_name) === false) {
 			// insert the method name
-			$method_content = str_replace('[method_name]', $method_name, $method_content);
+			$method_content = str_replace('{{method_name}}', $method_name, $method_content);
 			// add newline between methods
 			if (strpos($new_content, 'function') !== false) {
 				$new_content .= "\n";
@@ -53,17 +51,12 @@ class ControllerGenerator
 
 	public function updateRoutes($path, $verb, $method_name)
 	{
-		$new_route = "\$router->$verb('$path', '{$this->controller_name}@$method_name');\n";
-		$route_file = base_path() . '/routes/web.php';
+		$new_route      = "\$router->$verb('$path', '{$this->controller_name}@$method_name');\n";
+		$route_file     = base_path() . '/routes/web.php';
 		$route_contents = file_get_contents($route_file);
 		if (strpos($route_contents, $new_route) === false) {
 			file_put_contents($route_file, $new_route, FILE_APPEND);
 		}
-	}
-
-	private function getTemplatePath() : string
-	{
-		return storage_path() . self::template_directory;
 	}
 
 	public static function createControllerPath(string $controller_name) : string
@@ -71,10 +64,10 @@ class ControllerGenerator
 		$controller_directory = base_path() . '/app/Http/Controllers/';
 
 		return $controller_directory . $controller_name . '.php';
-    }
+	}
 
-    public function getControllerName() : string
-    {
-        return $this->controller_name;
-    }
+	public function getControllerName() : string
+	{
+		return $this->controller_name;
+	}
 }

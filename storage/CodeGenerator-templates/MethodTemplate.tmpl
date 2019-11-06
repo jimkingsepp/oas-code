@@ -1,8 +1,7 @@
-	public function [method_name](Request $request) : Response
+	public function {{method_name}}(Request $request) : Response
 	{
         // create stream with new content
-		$stream = fopen('data://text/plain,' . 'You have successfully connected to the [method_name] endpoint', 'r');
+		$stream = fopen('data://text/plain,' . 'You have successfully connected to the {{method_name}} endpoint', 'r');
 		// create and return new Response built from new stream
 		return (new Response)->withBody(new \GuzzleHttp\Psr7\Stream($stream));
-
     }

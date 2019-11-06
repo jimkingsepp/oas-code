@@ -59,7 +59,7 @@ class Schema implements Collectable
 	private $type;
 	private $required;
 	private $properties;
-	private $schemas = [];
+	private $references = [];
 
 	public function __construct(array $schema_data, string $name)
 	{
@@ -67,7 +67,7 @@ class Schema implements Collectable
 		if (array_key_first($schema_data) === 'allOf') {
 			array_walk($schema_data['allOf'], function ($item, $key) {
 				if (in_array('$ref', array_keys($item))) {
-					$this->schemas[] = $item['$ref'];
+					$this->references[] = basename($item['$ref']);
 				} else {
 					$this->setMemberVariables($item);
 				}
@@ -91,12 +91,12 @@ class Schema implements Collectable
 	public function getName() : string
 	{
 		return $this->name;
-    }
+	}
 
-    public function makeClass(string $file) : void
-    {
-        echo json_encode($this->toArray(), JSON_PRETTY_PRINT) . "\n";
-    }
+	public function getReferences() : array
+	{
+		return $this->references;
+	}
 
 	public function getProperties() : Collection
 	{
@@ -105,7 +105,10 @@ class Schema implements Collectable
 
 	public function toArray() : array
 	{
-		$schema_array = ['name' => $this->name];
+		$schema_array = [
+			'name'       => $this->name,
+			'references' => $this->references
+		];
 		iterator_apply($this->properties, function () use (&$schema_array) {
 			array_push($schema_array, $this->properties->toArray());
 		}, [$this->properties, &$schema_array]);
